@@ -1,0 +1,40 @@
+__pycache__
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+*.egg-info/
+dist/
+build/
+.git
+.gitignore
+.vscode
+.idea
+.pytest_cache
+.coverage
+htmlcov/
+
+# Training data and checkpoints (not needed for serving)
+dataset/
+question_sim/checkpoints/
+question_sim/analysis/
+
+# Test and debug directories
+test_cleaning/
+test_stuff/
+test_mlflow/
+test_openvino/
+debug_run/
+tests/
+
+# Training scripts
+train.py
+evaluate.py
+preprocess.py
+
+# Notebooks
+*.ipynb
