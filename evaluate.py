@@ -7,7 +7,6 @@ from sentence_transformers.evaluation import BinaryClassificationEvaluator
 
 from datasets import Dataset
 from question_similarity.data.config import TEST_DATA_RATIO, DATASET_SEED
-from question_similarity.data.preprocess import clean_data
 
 
 def get_test_dataset(clean_path: Path, test_size: float = TEST_DATA_RATIO):

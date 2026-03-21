@@ -1,6 +1,5 @@
 import click
 import mlflow
-from mlflow.environment_variables import MLFLOW_TRACKING_URI
 import pandas as pd
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
@@ -9,8 +8,10 @@ from sentence_transformers import (
     SentenceTransformerTrainer,
     SentenceTransformerTrainingArguments,
 )
+from transformers.trainer_utils import TrainOutput
 
 from datasets import Dataset
+from question_similarity.common.config import MLFLOW_TRACKING_URI
 from question_similarity.data.config import TEST_DATA_RATIO, DATASET_SEED
 from question_similarity.data.preprocess import clean_data
 from question_similarity.training.losses import ContrastiveLoss
@@ -95,9 +96,40 @@ def setup_training(
     return trainer
 
 
+def log_metrics_to_mlflow(
+    initial_results: dict[str, float],
+    train_result: TrainOutput,
+    final_results: dict[str, float],
+    model_info,
+):
+    if train_result.metrics:
+        for metric_name, metric_value in train_result.metrics.items():
+            mlflow.log_metric(metric_name, metric_value)
+
+    if initial_results:
+        for metric_name, metric_value in initial_results.items():
+            mlflow.log_metric(
+                f"initial_{metric_name}", metric_value, model_id=model_info.model_id
+            )
+
+    if final_results:
+        for metric_name, metric_value in final_results.items():
+            mlflow.log_metric(
+                f"final_{metric_name}", metric_value, model_id=model_info.model_id
+            )
+
+
 @click.command()
-@click.argument("source", type=click.Path(exists=True))
-@click.argument("run_name", type=str)
+@click.option(
+    "--source-file",
+    type=click.Path(exists=True),
+    help="Path to the source CSV file containing question pairs",
+)
+@click.option(
+    "--run-name",
+    type=str,
+    help="The name of the mlflow run and experiment folder to use for this training run",
+)
 @click.option(
     "--force", is_flag=True, help="Force re-cleaning even if output file already exists"
 )
@@ -117,40 +149,27 @@ def setup_training(
     help="Whether to register the model in MLflow Model Registry",
 )
 def train(
-    source: str,
+    source_file: str,
     run_name: str,
     force: bool,
     model_name: str,
     learning_rate: float,
     register_model: bool,
 ) -> None:
-    """
-    Train a question similarity model using cleaned data from a source CSV file.
-
-    Args:
-        source: Path to the source CSV file
-        run_name: Folder path for storing experiment artifacts
-        force: If set, remove existing output file and re-clean the data
-        model_name: Model name to use for training (default: all-MiniLM-L6-v2)
-        learning_rate: Learning rate for the optimizer (optional)
-        register_model: Whether to register the model in MLflow Model Registry
-    """
-    # Set up MLflow experiment and run
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI.get())
+    """Train a question similarity model using cleaned data from a source CSV file."""
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(model_name)
 
     workspace = Path(".workspace") / run_name
     workspace.mkdir(parents=True, exist_ok=True)
 
     with mlflow.start_run(run_name=run_name):
-        clean_path = clean_data(source, workspace, force)
+        clean_path = clean_data(source_file, workspace, force)
 
         train_dataset, valid_dataset, test_dataset = get_dataset_splits(clean_path)
 
-        # Log training data size
         mlflow.log_param("training_data_size", len(train_dataset))
 
-        # Log learning rate if provided
         if learning_rate is not None:
             mlflow.log_param("learning_rate", learning_rate)
 
@@ -173,21 +192,12 @@ def train(
             model,
             registered_model_name=model_name + "_tuned" if register_model else None,
         )
+        click.echo(
+            f"Model saved to {model_path} and to MLFlow under {model_info.model_id}"
+        )
 
         click.echo("Logging metrics to MLflow...")
-        if initial_results:
-            for metric_name, metric_value in initial_results.items():
-                mlflow.log_metric(
-                    f"initial_{metric_name}", metric_value, model_id=model_info.model_id
-                )
-
-        if final_results:
-            for metric_name, metric_value in final_results.items():
-                mlflow.log_metric(
-                    f"final_{metric_name}", metric_value, model_id=model_info.model_id
-                )
-
-        click.echo(f"Model saved to {model_path}")
+        log_metrics_to_mlflow(initial_results, train_result, final_results, model_info)
 
 
 if __name__ == "__main__":

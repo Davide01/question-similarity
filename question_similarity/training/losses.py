@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Iterable
 
 from sentence_transformers import SentenceTransformer
@@ -6,12 +7,16 @@ import torch.nn.functional as F
 
 
 class Loss(nn.Module):
+    """Base class for losses.
+
+    You can implement your own loss functions by inheriting from this class and implementing the forward method.
+    """
+
+    @abstractmethod
     def forward(
         self, sentence_features: Iterable[dict[str, Tensor]], labels: Tensor
     ) -> Tensor:
-        raise NotImplementedError(
-            "Loss is an abstract class. Implement forward method."
-        )
+        pass
 
 
 class ContrastiveLoss(Loss):

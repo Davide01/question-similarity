@@ -66,7 +66,7 @@ def clean_data(source: str, run_name: str, force: bool) -> Path:
     print(f"Cleaned data saved to {target_path}")
 
     # Print summary
-    print(f"\nData cleaning summary:")
+    print("\nData cleaning summary:")
     print(f"  Rows processed: {len(df_cleaned)}")
     print(f"  Columns: {', '.join(df_cleaned.columns)}")
 
