@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from sentence_transformers import SentenceTransformer
 from typing import Optional
 
+from question_similarity.data.preprocess import clean_text
 from question_similarity.runtime.engine import Engine
 from question_similarity.runtime.models import SimilarityRequest, SimilarityResponse
 
@@ -40,16 +41,18 @@ def compute_similarity(request: SimilarityRequest) -> SimilarityResponse:
             status_code=500, detail="Model not loaded. Check server startup logs."
         )
 
-    logger.info(
-        "Predicting similarity for: '%s' vs '%s'", request.sentence1, request.sentence2
-    )
-    is_similar, similarity = engine.predict(request.sentence1, request.sentence2)
+    sentence1 = clean_text(request.sentence1.strip())
+    sentence2 = clean_text(request.sentence2.strip())
+
+    logger.info("Predicting similarity for: '%s' vs '%s'", sentence1, sentence2)
+
+    is_similar, similarity = engine.predict(sentence1, sentence2)
     logger.info("Result: is_similar=%s, similarity=%.4f", is_similar, similarity)
 
     return SimilarityResponse(
         is_similar=is_similar,
-        sentence1=request.sentence1,
-        sentence2=request.sentence2,
+        sentence1=sentence1,
+        sentence2=sentence2,
         similarity=similarity,
     )
 

@@ -6,15 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install Poetry and disable virtualenv creation (we're in a container)
 RUN pip install "poetry>=2.0.0,<3.0.0" && \
     poetry config virtualenvs.create false
 
-# Install dependencies first for better layer caching
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --no-interaction
 
-# Copy the application entrypoint and the question_sim package
 COPY api.py .
 COPY question_sim/ ./question_sim/
 

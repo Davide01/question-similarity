@@ -139,12 +139,10 @@ def evaluate(run_id: str, model_path: str, data: str, log_to_mlflow: bool):
         )
         raise click.BadParameter("Cannot specify both --run-id and --model-path")
 
-    # Load test dataset
     click.echo(f"Loading test dataset from {data}...")
     test_dataset = get_test_dataset(Path(data))
     click.echo(f"Test dataset size: {len(test_dataset)}")
 
-    # Load model
     if run_id:
         click.echo(f"Loading model from MLflow run: {run_id}")
         model = load_model_from_mlflow(run_id)
@@ -152,7 +150,6 @@ def evaluate(run_id: str, model_path: str, data: str, log_to_mlflow: bool):
         click.echo(f"Loading model from: {model_path}")
         model = load_model_from_local(model_path)
 
-    # Evaluate
     click.echo("Running evaluation...")
     results = evaluate_model(model, test_dataset, verbose=True)
 

@@ -20,17 +20,23 @@ poetry sync
 Clean raw question pair data (removes HTML, special characters, and empty rows):
 
 ```bash
-poetry run python -c "from question_similarity.data.preprocess import clean_data; clean_data('dataset/question_pairs_raw.csv', 'output_dir', force=False)"
+poetry run python preprocess.py dataset/question_pairs_raw.csv cleaning_experiment --force
 ```
 
 Note: `train.py` runs cleaning automatically before training.
 
 ### Training
 
+With this module you can run the whole cleaning, training and evaluation pipeline. The models and metrics are saved to mlflow (local for the demo project). As experiment the model name is used and as run the run-name.
+During training we run an evaluation before and after the fine-tuning to get an idea how much our fine-tuning improve the model.
+
+The metrics logged are accuracy, precision, recall, f1, mcc and ap.
+The binary classificator also calculates the threshold similarity values for each metric which produces the best result for each metric. This metric is then used during inference for deciding on the fly if the questions are similar or not. For simplicity I'm using the accuracy threshold. But depending on the use case this could be changed.
+
 Fine-tune a sentence-transformer model:
 
 ```bash
-poetry run python train.py <source_csv> <run_name> [OPTIONS]
+poetry run python train.py --source-file <source_csv> --run_name <run_name> [OPTIONS]
 ```
 
 Options:
@@ -63,7 +69,6 @@ In order to use them in the API you can pass them as environment variables:
 ```bash
 MODEL_NAME="test_model" MODEL_VERSION="1" poetry run python -m api
 ```
-
 
 ## Docker
 
